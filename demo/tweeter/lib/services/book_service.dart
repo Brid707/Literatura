@@ -6,7 +6,7 @@ import '../repositories/book_repository.dart';
 class BookService implements IBookRepository {
   static final BookService _instance = BookService._internal();
 
-  final String baseUrl = 'http://localhost:8080/api/books';
+  final String baseUrl = 'https://literatura-8l0q.onrender.com/api/books';
   late http.Client _httpClient;
 
   BookService._internal() {
