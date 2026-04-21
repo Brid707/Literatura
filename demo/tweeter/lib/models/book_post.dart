@@ -14,12 +14,14 @@ class BookPost {
   });
 
   factory BookPost.fromJson(Map<String, dynamic> json) {
+    final id = json['id'];
+
     return BookPost(
-      id: json['id'],
-      nombreLibro: json['nombreLibro'],
-      imagen: json['imagen'],
-      autor: json['autor'],
-      descripcion: json['descripcion'],
+      id: id is int ? id : (id is String ? int.tryParse(id) ?? 0 : 0),
+      nombreLibro: json['nombreLibro']?.toString() ?? '',
+      imagen: json['imagen']?.toString() ?? '',
+      autor: json['autor']?.toString() ?? '',
+      descripcion: json['descripcion']?.toString() ?? '',
     );
   }
 
@@ -31,5 +33,10 @@ class BookPost {
       'autor': autor,
       'descripcion': descripcion,
     };
+  }
+
+  @override
+  String toString() {
+    return 'BookPost(id: $id, nombreLibro: $nombreLibro, autor: $autor)';
   }
 }

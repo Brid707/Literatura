@@ -1,16 +1,20 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+
 import '../models/book_post.dart';
 import '../repositories/book_repository.dart';
+import 'auth_service.dart';
 
 class BookService implements IBookRepository {
   static final BookService _instance = BookService._internal();
 
-  final String baseUrl = 'https://literatura-8l0q.onrender.com/api/books';
+  final String baseUrl = 'http://localhost:8080/api/books';
   late http.Client _httpClient;
+  late AuthService _authService;
 
   BookService._internal() {
     _httpClient = http.Client();
+    _authService = AuthService();
   }
 
   factory BookService() {
@@ -21,17 +25,45 @@ class BookService implements IBookRepository {
     return _instance;
   }
 
+  Map<String, String> _getHeaders() {
+    final token = _authService.getToken();
+
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+    };
+
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+
+    return headers;
+  }
+
   @override
   Future<List<BookPost>> fetchBooks() async {
     try {
       final response = await _httpClient.get(
         Uri.parse(baseUrl),
-        headers: {'Content-Type': 'application/json'},
+        headers: _getHeaders(),
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> jsonData = jsonDecode(response.body);
-        return jsonData.map((item) => BookPost.fromJson(item)).toList();
+        final dynamic jsonData = jsonDecode(response.body);
+
+        if (jsonData is List) {
+          return jsonData
+              .map((item) => BookPost.fromJson(Map<String, dynamic>.from(item)))
+              .toList();
+        }
+
+        if (jsonData is Map<String, dynamic> && jsonData.containsKey('content')) {
+          final content = jsonData['content'] as List<dynamic>? ?? [];
+          return content
+              .map((item) => BookPost.fromJson(Map<String, dynamic>.from(item)))
+              .toList();
+        }
+
+        throw Exception('Unexpected response format');
       } else {
         throw Exception(
           'Failed to load books. Status code: ${response.statusCode}',
@@ -43,16 +75,16 @@ class BookService implements IBookRepository {
   }
 
   @override
-  Future<BookPost> createBook(
-    String nombreLibro,
-    String imagen,
-    String autor,
-    String descripcion,
-  ) async {
+  Future<BookPost> createBook({
+    required String nombreLibro,
+    required String imagen,
+    required String autor,
+    required String descripcion,
+  }) async {
     try {
       final response = await _httpClient.post(
-        Uri.parse(baseUrl),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('$baseUrl/create'),
+        headers: _getHeaders(),
         body: jsonEncode({
           'nombreLibro': nombreLibro,
           'imagen': imagen,
@@ -79,7 +111,7 @@ class BookService implements IBookRepository {
     try {
       final response = await _httpClient.delete(
         Uri.parse('$baseUrl/$id'),
-        headers: {'Content-Type': 'application/json'},
+        headers: _getHeaders(),
       );
 
       if (response.statusCode != 200 && response.statusCode != 204) {
