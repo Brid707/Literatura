@@ -8,7 +8,7 @@ import 'auth_service.dart';
 class BookService implements IBookRepository {
   static final BookService _instance = BookService._internal();
 
-  final String baseUrl = 'http://localhost:8080/api/books';
+  final String baseUrl = 'https://literatura-8l0q.onrender.com/api';
   late http.Client _httpClient;
   late AuthService _authService;
 

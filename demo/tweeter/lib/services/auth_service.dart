@@ -9,7 +9,7 @@ import '../repositories/auth_repository.dart';
 class AuthService implements IAuthRepository {
   static final AuthService _instance = AuthService._internal();
 
-  final String baseUrl = 'http://localhost:8080/api/auth';
+  final String baseUrl = 'https://literatura-8l0q.onrender.com/api';
   late http.Client _httpClient;
 
   SharedPreferences? _prefs;
