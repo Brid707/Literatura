@@ -40,12 +40,13 @@ public class BookPostController {
 
     @GetMapping
     @Transactional(readOnly = true)
-    public List<BookPost> getAllBooksSimple() {
-        return bookPostRepository.findAll();
+    public List<BookPostResponseDTO> getAllBooksSimple() {
+        List<BookPost> books = bookPostRepository.findAll();
+        return books.stream().map(BookPostResponseDTO::new).toList();
     }
 
     @PostMapping("/create")
-    public BookPost createBook(@Valid @RequestBody BookPost bookPost) {
+    public BookPostResponseDTO createBook(@Valid @RequestBody BookPost bookPost) {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
@@ -62,7 +63,7 @@ public class BookPostController {
         newBook.setPostedBy(user);
         bookPostRepository.save(newBook);
 
-        return newBook;
+        return new BookPostResponseDTO(newBook);
     }
 
     @DeleteMapping("/{id}")
