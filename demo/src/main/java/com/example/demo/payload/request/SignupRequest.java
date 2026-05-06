@@ -39,6 +39,8 @@ public class SignupRequest {
         this.email = email;
     }
 
+
+
     public Set<String> getRole() {
         return role;
     }
@@ -50,6 +52,8 @@ public class SignupRequest {
     public String getPassword() {
         return password;
     }
+
+
 
     public void setPassword(String password) {
         this.password = password;

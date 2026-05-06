@@ -1,13 +1,16 @@
 package com.example.demo.models;
 
+import java.time.Instant;
+
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 
 @Entity
 @Table(
-    name = "book_reactions",
-    uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"user_id", "book_post_id"})
-    }
+        name = "book_reactions",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"user_id", "book_post_id"})
+        }
 )
 public class BookReaction {
 
@@ -15,65 +18,51 @@ public class BookReaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "reaction_id")
-    private Long reactionId;
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(length = 30)
+    private EReaction type;
 
-    @Column(name = "user_id")
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User reactedBy;
 
-    @Column(name = "book_post_id")
-    private Long bookPostId;
-
-    @ManyToOne
-    @JoinColumn(name = "user_id", insertable = false, updatable = false)
-    private User user;
-
-    @ManyToOne
-    @JoinColumn(name = "book_post_id", insertable = false, updatable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "book_post_id", nullable = false)
     private BookPost bookPost;
 
-    @ManyToOne
-    @JoinColumn(name = "reaction_id", insertable = false, updatable = false)
-    private Reaction reaction;
+    @Temporal(TemporalType.TIMESTAMP)
+    private Instant createdAt;
 
     public BookReaction() {
+        this.createdAt = Instant.now();
+    }
+
+    public BookReaction(EReaction type, User reactedBy, BookPost bookPost) {
+        this();
+        this.type = type;
+        this.reactedBy = reactedBy;
+        this.bookPost = bookPost;
     }
 
     public Long getId() {
         return id;
     }
 
-    public Long getReactionId() {
-        return reactionId;
+    public EReaction getType() {
+        return type;
     }
 
-    public void setReactionId(Long reactionId) {
-        this.reactionId = reactionId;
+    public void setType(EReaction type) {
+        this.type = type;
     }
 
-    public Long getUserId() {
-        return userId;
+    public User getReactedBy() {
+        return reactedBy;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public Long getBookPostId() {
-        return bookPostId;
-    }
-
-    public void setBookPostId(Long bookPostId) {
-        this.bookPostId = bookPostId;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-        this.userId = user.getId();
+    public void setReactedBy(User reactedBy) {
+        this.reactedBy = reactedBy;
     }
 
     public BookPost getBookPost() {
@@ -82,15 +71,13 @@ public class BookReaction {
 
     public void setBookPost(BookPost bookPost) {
         this.bookPost = bookPost;
-        this.bookPostId = bookPost.getId();
     }
 
-    public Reaction getReaction() {
-        return reaction;
+    public Instant getCreatedAt() {
+        return createdAt;
     }
 
-    public void setReaction(Reaction reaction) {
-        this.reaction = reaction;
-        this.reactionId = reaction.getId();
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
     }
 }

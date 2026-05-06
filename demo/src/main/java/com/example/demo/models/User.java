@@ -10,11 +10,11 @@ import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(
-    name = "users",
-    uniqueConstraints = {
-        @UniqueConstraint(columnNames = "username"),
-        @UniqueConstraint(columnNames = "email")
-    }
+        name = "users",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = "username"),
+                @UniqueConstraint(columnNames = "email")
+        }
 )
 public class User {
 
@@ -37,17 +37,20 @@ public class User {
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-        name = "user_roles",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "role_id")
+            name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles = new HashSet<>();
 
-    @OneToMany(mappedBy = "postedBy")
+    @OneToMany(mappedBy = "postedBy", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<BookPost> books = new HashSet<>();
 
-    @OneToMany(mappedBy = "user")
-    private Set<BookReaction> reactions = new HashSet<>();
+    @OneToMany(mappedBy = "reactedBy", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<BookReaction> bookReactions = new HashSet<>();
+
+    @OneToMany(mappedBy = "commentedBy", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<BookComment> bookComments = new HashSet<>();
 
     public User() {
     }
@@ -82,6 +85,8 @@ public class User {
         this.email = email;
     }
 
+
+
     public String getPassword() {
         return password;
     }
@@ -89,6 +94,8 @@ public class User {
     public void setPassword(String password) {
         this.password = password;
     }
+
+
 
     public Set<Role> getRoles() {
         return roles;
@@ -98,6 +105,8 @@ public class User {
         this.roles = roles;
     }
 
+
+
     public Set<BookPost> getBooks() {
         return books;
     }
@@ -106,11 +115,23 @@ public class User {
         this.books = books;
     }
 
-    public Set<BookReaction> getReactions() {
-        return reactions;
+
+
+    public Set<BookReaction> getBookReactions() {
+        return bookReactions;
     }
 
-    public void setReactions(Set<BookReaction> reactions) {
-        this.reactions = reactions;
+    public void setBookReactions(Set<BookReaction> bookReactions) {
+        this.bookReactions = bookReactions;
+    }
+
+
+
+    public Set<BookComment> getBookComments() {
+        return bookComments;
+    }
+
+    public void setBookComments(Set<BookComment> bookComments) {
+        this.bookComments = bookComments;
     }
 }

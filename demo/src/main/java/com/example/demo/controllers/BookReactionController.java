@@ -1,90 +1,151 @@
 package com.example.demo.controllers;
 
+import java.util.List;
 import java.util.Optional;
 
 import jakarta.validation.Valid;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import com.example.demo.models.BookPost;
 import com.example.demo.models.BookReaction;
-import com.example.demo.models.Reaction;
 import com.example.demo.models.User;
 import com.example.demo.payload.request.BookReactionRequest;
+import com.example.demo.payload.response.BookReactionResponseDTO;
+import com.example.demo.payload.response.MessageResponse;
 import com.example.demo.repository.BookPostRepository;
 import com.example.demo.repository.BookReactionRepository;
-import com.example.demo.repository.ReactionRepository;
 import com.example.demo.repository.UserRepository;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-
-@CrossOrigin(origins = "*", maxAge = 3600)
+@CrossOrigin(originPatterns = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/book-reactions")
 public class BookReactionController {
 
-    @Autowired
-    private BookReactionRepository bookReactionRepository;
+    private final BookReactionRepository bookReactionRepository;
+    private final UserRepository userRepository;
+    private final BookPostRepository bookPostRepository;
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private BookPostRepository bookPostRepository;
-
-    @Autowired
-    private ReactionRepository reactionRepository;
-
-    @GetMapping("/all")
-    public Page<BookReaction> getAllReactions(Pageable pageable) {
-        return bookReactionRepository.findAll(pageable);
+    public BookReactionController(
+            BookReactionRepository bookReactionRepository,
+            UserRepository userRepository,
+            BookPostRepository bookPostRepository
+    ) {
+        this.bookReactionRepository = bookReactionRepository;
+        this.userRepository = userRepository;
+        this.bookPostRepository = bookPostRepository;
     }
 
-    @PostMapping("/create")
-    public BookReaction createReaction(@Valid @RequestBody BookReactionRequest bookReactionRequest) {
+    @GetMapping("/book/{bookPostId}")
+    public ResponseEntity<?> getReactionsByBook(@PathVariable Long bookPostId) {
+        Optional<BookPost> bookOpt = bookPostRepository.findById(bookPostId);
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (bookOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new MessageResponse("Book not found"));
+        }
+
+        List<BookReactionResponseDTO> reactions =
+                bookReactionRepository.findByBookPost(bookOpt.get())
+                        .stream()
+                        .map(BookReactionResponseDTO::new)
+                        .toList();
+
+        return ResponseEntity.ok(reactions);
+    }
+
+    @PostMapping
+    public ResponseEntity<?> createReaction(
+            @Valid @RequestBody BookReactionRequest request
+    ) {
+        try {
+            User user = getAuthenticatedUser();
+
+            BookPost book = bookPostRepository
+                    .findById(request.getBookPostId())
+                    .orElseThrow(() -> new RuntimeException("Book not found"));
+
+            Optional<BookReaction> existingReaction =
+                    bookReactionRepository.findByBookPostAndReactedBy(book, user);
+
+            BookReaction reaction;
+
+            if (existingReaction.isPresent()) {
+                reaction = existingReaction.get();
+                reaction.setType(request.getType());
+            } else {
+                reaction = new BookReaction(
+                        request.getType(),
+                        user,
+                        book
+                );
+            }
+
+            BookReaction savedReaction =
+                    bookReactionRepository.save(reaction);
+
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(new BookReactionResponseDTO(savedReaction));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{reactionId}")
+    public ResponseEntity<?> deleteReaction(@PathVariable Long reactionId) {
+        if (!bookReactionRepository.existsById(reactionId)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new MessageResponse("Reaction not found"));
+        }
+
+        bookReactionRepository.deleteById(reactionId);
+
+        return ResponseEntity.ok(
+                new MessageResponse("Reaction deleted successfully")
+        );
+    }
+
+    @DeleteMapping("/book/{bookPostId}/user")
+    public ResponseEntity<?> removeUserReactionFromBook(
+            @PathVariable Long bookPostId
+    ) {
+        try {
+            User user = getAuthenticatedUser();
+
+            BookPost book = bookPostRepository
+                    .findById(bookPostId)
+                    .orElseThrow(() -> new RuntimeException("Book not found"));
+
+            Optional<BookReaction> reaction =
+                    bookReactionRepository.findByBookPostAndReactedBy(book, user);
+
+            reaction.ifPresent(bookReactionRepository::delete);
+
+            return ResponseEntity.ok(
+                    new MessageResponse("Reaction removed successfully")
+            );
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new MessageResponse("Error: " + e.getMessage()));
+        }
+    }
+
+    private User getAuthenticatedUser() {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || authentication.getName() == null) {
+            throw new RuntimeException("User not authenticated");
+        }
+
         String username = authentication.getName();
 
-        User user = getValidUser(username);
-        BookPost book = getValidBook(bookReactionRequest.getBookPostId());
-        Reaction reaction = getValidReaction(bookReactionRequest.getReactionId());
-
-        BookReaction newReaction = new BookReaction();
-        newReaction.setUser(user);
-        newReaction.setBookPost(book);
-        newReaction.setReaction(reaction);
-
-        bookReactionRepository.save(newReaction);
-
-        return newReaction;
-    }
-
-    private User getValidUser(String username) {
-        Optional<User> userOpt = userRepository.findByUsername(username);
-        if (userOpt.isEmpty()) {
-            throw new RuntimeException("User not found");
-        }
-        return userOpt.get();
-    }
-
-    private BookPost getValidBook(Long bookPostId) {
-        Optional<BookPost> bookOpt = bookPostRepository.findById(bookPostId);
-        if (bookOpt.isEmpty()) {
-            throw new RuntimeException("Book not found");
-        }
-        return bookOpt.get();
-    }
-
-    private Reaction getValidReaction(Long reactionId) {
-        Optional<Reaction> reactionOpt = reactionRepository.findById(reactionId);
-        if (reactionOpt.isEmpty()) {
-            throw new RuntimeException("Reaction not found");
-        }
-        return reactionOpt.get();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
     }
 }

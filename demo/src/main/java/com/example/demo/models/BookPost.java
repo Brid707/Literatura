@@ -1,5 +1,6 @@
 package com.example.demo.models;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -35,13 +36,25 @@ public class BookPost {
     @JoinColumn(name = "posted_by", referencedColumnName = "id")
     private User postedBy;
 
-    @OneToMany(mappedBy = "bookPost")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Instant createdAt;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    private Instant updatedAt;
+
+    @OneToMany(mappedBy = "bookPost", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<BookComment> comments = new HashSet<>();
+
+    @OneToMany(mappedBy = "bookPost", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<BookReaction> reactions = new HashSet<>();
 
     public BookPost() {
+        this.createdAt = Instant.now();
+        this.updatedAt = Instant.now();
     }
 
     public BookPost(String nombreLibro, String imagen, String autor, String descripcion) {
+        this();
         this.nombreLibro = nombreLibro;
         this.imagen = imagen;
         this.autor = autor;
@@ -58,6 +71,7 @@ public class BookPost {
 
     public void setNombreLibro(String nombreLibro) {
         this.nombreLibro = nombreLibro;
+        this.updatedAt = Instant.now();
     }
 
     public String getImagen() {
@@ -66,6 +80,7 @@ public class BookPost {
 
     public void setImagen(String imagen) {
         this.imagen = imagen;
+        this.updatedAt = Instant.now();
     }
 
     public String getAutor() {
@@ -74,6 +89,7 @@ public class BookPost {
 
     public void setAutor(String autor) {
         this.autor = autor;
+        this.updatedAt = Instant.now();
     }
 
     public String getDescripcion() {
@@ -82,6 +98,7 @@ public class BookPost {
 
     public void setDescripcion(String descripcion) {
         this.descripcion = descripcion;
+        this.updatedAt = Instant.now();
     }
 
     public User getPostedBy() {
@@ -92,11 +109,43 @@ public class BookPost {
         this.postedBy = postedBy;
     }
 
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public Set<BookComment> getComments() {
+        return comments;
+    }
+
+    public void setComments(Set<BookComment> comments) {
+        this.comments = comments;
+    }
+
     public Set<BookReaction> getReactions() {
         return reactions;
     }
 
     public void setReactions(Set<BookReaction> reactions) {
         this.reactions = reactions;
+    }
+
+    public long getCommentsCount() {
+        return comments.size();
+    }
+
+    public long getReactionsCount() {
+        return reactions.size();
     }
 }

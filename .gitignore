@@ -43,3 +43,20 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+
+# Spring Boot / Maven
+target/
+**/target/
+.mvn/wrapper/maven-wrapper.jar
+
+# Base de datos local H2
+data/
+**/data/
+*.mv.db
+*.trace.db
+
+# Variables de entorno / configuración local
+.env
+*.env
+application-local.properties

@@ -4,6 +4,10 @@ class BookPost {
   final String imagen;
   final String autor;
   final String descripcion;
+  final String? postedByUsername;
+  final int? postedByUserId;
+  final int commentsCount;
+  final int reactionsCount;
 
   BookPost({
     required this.id,
@@ -11,17 +15,30 @@ class BookPost {
     required this.imagen,
     required this.autor,
     required this.descripcion,
+    this.postedByUsername,
+    this.postedByUserId,
+    required this.commentsCount,
+    required this.reactionsCount,
   });
 
   factory BookPost.fromJson(Map<String, dynamic> json) {
-    final id = json['id'];
+    int parseInt(dynamic value) {
+      if (value is int) return value;
+      return int.tryParse(value?.toString() ?? '0') ?? 0;
+    }
 
     return BookPost(
-      id: id is int ? id : (id is String ? int.tryParse(id) ?? 0 : 0),
+      id: parseInt(json['id']),
       nombreLibro: json['nombreLibro']?.toString() ?? '',
       imagen: json['imagen']?.toString() ?? '',
       autor: json['autor']?.toString() ?? '',
       descripcion: json['descripcion']?.toString() ?? '',
+      postedByUsername: json['postedByUsername']?.toString(),
+      postedByUserId: json['postedByUserId'] == null
+          ? null
+          : parseInt(json['postedByUserId']),
+      commentsCount: parseInt(json['commentsCount']),
+      reactionsCount: parseInt(json['reactionsCount']),
     );
   }
 
@@ -32,6 +49,10 @@ class BookPost {
       'imagen': imagen,
       'autor': autor,
       'descripcion': descripcion,
+      'postedByUsername': postedByUsername,
+      'postedByUserId': postedByUserId,
+      'commentsCount': commentsCount,
+      'reactionsCount': reactionsCount,
     };
   }
 

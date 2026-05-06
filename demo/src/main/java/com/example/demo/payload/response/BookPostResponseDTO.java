@@ -1,5 +1,7 @@
 package com.example.demo.payload.response;
 
+import java.time.Instant;
+
 import com.example.demo.models.BookPost;
 
 public class BookPostResponseDTO {
@@ -9,9 +11,14 @@ public class BookPostResponseDTO {
     private String imagen;
     private String autor;
     private String descripcion;
-    private UserResponseDTO postedBy;
+    private String postedByUsername;
+    private Long postedByUserId;
+    private Long commentsCount;
+    private Long reactionsCount;
+    private Instant createdAt;
+    private Instant updatedAt;
 
-    public BookPostResponseDTO(BookPost bookPost) {
+    public BookPostResponseDTO(BookPost bookPost, Long commentsCount, Long reactionsCount) {
         this.id = bookPost.getId();
         this.nombreLibro = bookPost.getNombreLibro();
         this.imagen = bookPost.getImagen();
@@ -19,55 +26,57 @@ public class BookPostResponseDTO {
         this.descripcion = bookPost.getDescripcion();
 
         if (bookPost.getPostedBy() != null) {
-            this.postedBy = new UserResponseDTO(bookPost.getPostedBy());
+            this.postedByUsername = bookPost.getPostedBy().getUsername();
+            this.postedByUserId = bookPost.getPostedBy().getId();
         }
+
+        this.commentsCount = commentsCount;
+        this.reactionsCount = reactionsCount;
+        this.createdAt = bookPost.getCreatedAt();
+        this.updatedAt = bookPost.getUpdatedAt();
     }
 
     public Long getId() {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
     public String getNombreLibro() {
         return nombreLibro;
-    }
-
-    public void setNombreLibro(String nombreLibro) {
-        this.nombreLibro = nombreLibro;
     }
 
     public String getImagen() {
         return imagen;
     }
 
-    public void setImagen(String imagen) {
-        this.imagen = imagen;
-    }
-
     public String getAutor() {
         return autor;
-    }
-
-    public void setAutor(String autor) {
-        this.autor = autor;
     }
 
     public String getDescripcion() {
         return descripcion;
     }
 
-    public void setDescripcion(String descripcion) {
-        this.descripcion = descripcion;
+    public String getPostedByUsername() {
+        return postedByUsername;
     }
 
-    public UserResponseDTO getPostedBy() {
-        return postedBy;
+    public Long getPostedByUserId() {
+        return postedByUserId;
     }
 
-    public void setPostedBy(UserResponseDTO postedBy) {
-        this.postedBy = postedBy;
+    public Long getCommentsCount() {
+        return commentsCount;
+    }
+
+    public Long getReactionsCount() {
+        return reactionsCount;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
     }
 }

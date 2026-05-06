@@ -1,7 +1,9 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/api_config.dart';
 import '../models/jwt_response.dart';
 import '../models/user.dart';
 import '../repositories/auth_repository.dart';
@@ -9,10 +11,9 @@ import '../repositories/auth_repository.dart';
 class AuthService implements IAuthRepository {
   static final AuthService _instance = AuthService._internal();
 
-  final String baseUrl = 'https://literatura-8l0q.onrender.com/api/auth';
   late http.Client _httpClient;
-
   SharedPreferences? _prefs;
+
   String? _token;
   User? _user;
 
@@ -27,6 +28,8 @@ class AuthService implements IAuthRepository {
   static AuthService getInstance() {
     return _instance;
   }
+
+  String get _baseUrl => ApiConfig.authUrl;
 
   @override
   Future<void> init() async {
@@ -44,16 +47,14 @@ class AuthService implements IAuthRepository {
   Future<JwtResponse> login(String username, String password) async {
     try {
       final response = await _httpClient.post(
-        Uri.parse('$baseUrl/signin'),
+        Uri.parse('$_baseUrl/signin'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'username': username,
-          'password': password,
-        }),
+        body: jsonEncode({'username': username, 'password': password}),
       );
 
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+
         final jwtResponse = JwtResponse.fromJson(jsonData);
 
         _token = jwtResponse.accessToken;
@@ -64,19 +65,49 @@ class AuthService implements IAuthRepository {
         await _prefs!.setString('user', jsonEncode(_user!.toJson()));
 
         return jwtResponse;
-      } else {
-        throw Exception(
-          'Login failed. Status code: ${response.statusCode}',
-        );
+      }
+
+      throw Exception('No se pudo iniciar sesión (${response.statusCode})');
+    } catch (e) {
+      throw Exception('Error durante el login: $e');
+    }
+  }
+
+  Future<void> register({
+    required String username,
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await _httpClient.post(
+        Uri.parse('$_baseUrl/signup'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': username,
+          'email': email,
+          'password': password,
+        }),
+      );
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        String message = 'No se pudo registrar el usuario';
+
+        try {
+          final data = jsonDecode(response.body) as Map<String, dynamic>;
+          message = data['message']?.toString() ?? message;
+        } catch (_) {}
+
+        throw Exception('$message (${response.statusCode})');
       }
     } catch (e) {
-      throw Exception('Error during login: $e');
+      throw Exception('Error durante el registro: $e');
     }
   }
 
   @override
   Future<void> logout() async {
     _prefs ??= await SharedPreferences.getInstance();
+
     await _prefs!.remove('token');
     await _prefs!.remove('user');
 
@@ -91,6 +122,15 @@ class AuthService implements IAuthRepository {
 
   @override
   String? getToken() {
+    return _token;
+  }
+
+  Future<String?> getTokenOrRestore() async {
+    if (_token != null && _token!.isNotEmpty) {
+      return _token;
+    }
+
+    await init();
     return _token;
   }
 
