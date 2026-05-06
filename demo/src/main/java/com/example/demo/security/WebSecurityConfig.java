@@ -77,29 +77,29 @@ public class WebSecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
 
-                        // CORS preflight
+                        // Preflight de CORS
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // PRUEBA TEMPORAL:
-                        // Todos los GET quedan públicos.
-                        // Esto ayuda a confirmar si el 401 viene de Spring Security.
-                        .requestMatchers(HttpMethod.GET, "/**").permitAll()
-
-                        // Autenticación pública
+                        // Rutas públicas de autenticación
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/test/**").permitAll()
 
-                        // Crear, actualizar o eliminar libros requiere token
+                        // Lectura pública
+                        .requestMatchers(HttpMethod.GET, "/api/books/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/book-comments/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/book-reactions/**").permitAll()
+
+                        // Crear, editar o eliminar libros requiere login
                         .requestMatchers(HttpMethod.POST, "/api/books/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/books/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/books/**").authenticated()
 
-                        // Crear, actualizar o eliminar comentarios requiere token
+                        // Crear, editar o eliminar comentarios requiere login
                         .requestMatchers(HttpMethod.POST, "/api/book-comments/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/book-comments/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/book-comments/**").authenticated()
 
-                        // Crear, actualizar o eliminar reacciones requiere token
+                        // Crear, editar o eliminar reacciones requiere login
                         .requestMatchers(HttpMethod.POST, "/api/book-reactions/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/book-reactions/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/book-reactions/**").authenticated()
@@ -122,10 +122,15 @@ public class WebSecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOriginPatterns(List.of(
-                "http://localhost:*",
-                "http://127.0.0.1:*"
-        ));
+        /*
+         * Para Render:
+         * El frontend está en https://literatura-1.onrender.com
+         * El backend está en https://literatura-8l0q.onrender.com
+         *
+         * Como usamos JWT en el header Authorization y no cookies,
+         * allowCredentials puede ir en false.
+         */
+        configuration.setAllowedOriginPatterns(List.of("*"));
 
         configuration.setAllowedMethods(List.of(
                 "GET",
@@ -136,8 +141,14 @@ public class WebSecurityConfig {
         ));
 
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(List.of("Authorization"));
-        configuration.setAllowCredentials(true);
+
+        configuration.setExposedHeaders(List.of(
+                "Authorization"
+        ));
+
+        configuration.setAllowCredentials(false);
+
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
