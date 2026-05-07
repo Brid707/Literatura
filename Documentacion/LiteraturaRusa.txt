@@ -1,0 +1,159 @@
+\documentclass{article}
+
+% Language setting
+% Replace `english' with e.g. `spanish' to change the document language
+\usepackage[english]{babel}
+
+% Set page size and margins
+% Replace `letterpaper' with `a4paper' for UK/EU standard size
+\usepackage[letterpaper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+
+% Useful packages
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+
+\title{Literatura rusa}
+\author{Bridget Mendez Arano}
+
+\begin{document}
+\maketitle
+
+
+\section{Introduction}
+
+La aplicación "Literatura Rusa" fue creada en Flutter y Springboot. El tema "Literatura Rusa" fue elegido por el interés en obras de dostoyeski con la finalidad de irse extendiendo poco a poco en este genero literario. El objetivo fue pasar el proyecto de tweeter, adaptarlo a la aplicación, hacer funcional las reacciones y comentarios. Ademas permitir que se guarde a la base de datos, guardar el conteo de las reacciones y los usuarios que hicieron la publicacion. Como nube ocupamos claudinary y base de datos Aiven en PostgreSQL 
+
+\section{Patrones de diseño ocupados}
+
+\subsection{Patrones Arquitectonicos}
+\subsubsection{MVC - Model View Controller}
+
+Se ocuparon carpetas como lo son repository, controllers y models. Se utilizaron para separar la estructura del sistema en capas. Los modelos representan los datos, los controladores reciben las peticiones HTTP y los repositorios se encargan del acceso a la base de datos.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.55\textwidth]{Captura desde 2026-05-05 09-15-26.png}
+    \caption{Estructura del backend en Spring Boot.}
+    \label{fig:estructura-backend}
+\end{figure}
+
+\subsubsection{Capa de servicio}
+
+Esta carpeta se utilizo para agregar AuthService y BookService. AuthService se encarga del login, registro, token y cierre de sesión en cambio BookService se encarga de consultar libros, crear libros, comentar y reaccionar. Esto evita que las pantallas hagan directamente peticiones HTTP.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\linewidth]{Captura desde 2026-05-07 07-50-14.png}
+    \caption{final books = await bookService.fetchBooks(); La pantalla solo pide los libros, pero no sabe todos los detalles de la conexión.}
+    \label{fig:placeholder}
+\end{figure}
+
+\subsection{Patrones estructurales}
+
+\subsubsection{FACADE}
+
+Este se ocupo principalmente en flutter en la carpeta facade en el archivo library-facade.dart, este se utilizó para simplificar la comunicación entre las pantallas y los servicios. Este en lugar de que HomeScreen o LoginScreen llamen directamente a AuthService o BookService, llaman a métodos de LibraryFacade. Este tiene una ventaja es que el sistema ya no necesita conocer todos los detalles internos de los servicios solo lo llama y ya.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\linewidth]{Captura desde 2026-05-07 07-55-23.png}
+    \caption{Todos esos métodos están concentrados en LibraryFacade, pero internamente la fachada llama a AuthService o BookService.}
+    \label{fig:placeholder}
+\end{figure}
+
+\subsubsection{Adaptador o Adapter}
+
+Se utilizó para adaptar la respuesta del backend al formato que Flutter necesita. El backend puede devolver libros como lista directa o como respuesta paginada con content. El adaptador permite manejar ambos casos y convertirlos en objetos BookPost.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\linewidth]{Captura desde 2026-05-07 07-57-45.png}
+    \caption{ return BookResponseAdapter.extractBooks(jsonData);  Con esto, el frontend puede trabajar siempre con una lista de libros, aunque el backend mande la información en formatos distintos.}
+    \label{fig:placeholder}
+\end{figure}
+
+\subsubsection{DTO - Data Transfer Object}
+
+Se utilizó para enviar al frontend solo la información necesaria, sin exponer directamente las entidades de la base de datos.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.55\linewidth]{Captura desde 2026-05-05 10-13-58.png}
+    \caption{DTO}
+    \label{fig:placeholder}
+\end{figure}
+
+\subsection{Patrones creacionales}
+
+Sirve para crear los objetos principales que necesita la aplicación, por ejemplo: AuthService, BookService y LibraryFacade.La idea es que en vez de crear esos servicios directamente en main.dart, se hace todo en una sola clase, es decir, main.dart no se preocupa por crear primero AuthService, luego BookService, y después pasarlos a LibraryFacade. Todo eso lo hace la fábrica.
+
+\subsection{Singleton}
+
+Se utilizó para mantener una única instancia de los servicios principales. Esto es importante especialmente en AuthService, porque ahí se guarda información de sesión como los tokens, la autentificacion de usuario
+
+\subsection{Patrones de acceso a datos}
+\subsubsection{Repository}
+Se utilizó para separar el acceso a la base de datos de los controladores. Aqui BookPostRepository permite guardar y consultar libros, BookCommentRepository permite obtener comentarios asociados a un libro y BookReactionRepository permite guardar reacciones y contar cuántas tiene un libro.
+
+\subsubsection{Instancia única}
+El patrón Singleton se utilizó en Flutter en servicios como: AuthService, BookService. Este patrón permite que exista una sola instancia compartida de una clase.Este se usó porque AuthService maneja información importante de sesión, como el token JWT y el usuario autenticado. Si se crearan varias instancias diferentes de AuthService, podría haber inconsistencias, por ejemplo, que una instancia tenga token y otra no.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{Captura desde 2026-05-07 08-04-37.png}
+    \caption{Esto hace que cada vez que se llame a AuthService(), se devuelva la misma instancia.}
+    \label{fig:placeholder}
+\end{figure}
+\subsection{SOLID}
+\subsubsection{SRP — Single Responsibility Principle}
+Este principio dice que una clase debe tener una sola responsabilidad principal. En el proyecto se aplicó separando las clases por función.Por ejemplo:
+
+AuthController se encarga del login y registro.
+
+BookPostController se encarga de los libros.
+
+BookCommentController se encarga de los comentarios de libros.
+
+BookReactionController se encarga de las reacciones de libros.
+
+En Flutter también se aplicó:
+
+AuthService maneja autenticación.
+
+BookService maneja libros, comentarios y reacciones.
+
+\subsubsection{OCP — Open/Closed Principle}
+Este principio dice que el sistema debe estar abierto para extenderse, pero cerrado para modificarse innecesariamente. En el proyecto se aplicó cuando se agregaron comentarios y reacciones a los libros. En lugar de meter toda esa lógica dentro de BookPostController, se crearon clases separadas:
+
+BookComment, BookReaction, BookCommentController,
+BookReactionController, BookCommentRepository,
+BookReactionRepository
+
+Esto permitió extender la funcionalidad del sistema sin sobrecargar la clase principal de libros.
+
+\subsubsection{LSP — Liskov Substitution Principle}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{Captura desde 2026-05-07 08-13-54.png}
+    \caption{BookPostRepository extiende de JpaRepository, por lo tanto puede comportarse como un repositorio JPA válido dentro de Spring}
+    \label{fig:placeholder}
+\end{figure}
+
+\subsubsection{ISP — Interface Segregation Principle}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.75\linewidth]{Captura desde 2026-05-07 08-18-07.png}
+    \caption{La idea es que la autenticación tenga su propio contrato y los libros tengan otro. Así, una clase relacionada con login no necesita depender de métodos para crear libros o comentar.}
+    \label{fig:placeholder}
+\end{figure}
+
+\subsubsection{DIP — Dependency Inversion Principle}
+
+ \begin{figure}[H]
+     \centering
+     \includegraphics[width=0.75\linewidth]{Captura desde 2026-05-07 08-19-24.png}
+     \caption{Esto significa que BookCommentController no crea manualmente los repositorios. Spring Boot se los entrega automáticamente.}
+     \label{fig:placeholder}
+ \end{figure}
+\end{document}
